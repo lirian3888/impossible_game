@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>维度断层</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neon: {
+              blue: '#00f0ff',
+              purple: '#9d4edd',
+              pink: '#ff2a6d',
+              yellow: '#f7f700'
+            },
+            cyber: {
+              dark: '#0d1117',
+              medium: '#161b22',
+              light: '#30363d'
+            }
+          },
+          fontFamily: {
+            cyber: ['Orbitron', 'sans-serif', 'system-ui'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'scan': 'scan 4s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(0, 240, 255, 0.5), 0 0 10px rgba(0, 240, 255, 0.3)' },
+              '100%': { boxShadow: '0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.5), 0 0 30px rgba(0, 240, 255, 0.3)' },
+            },
+            scan: {
+              '0%': { backgroundPosition: '0% 0%' },
+              '100%': { backgroundPosition: '0% 100%' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow-neon {
+        text-shadow: 0 0 5px rgba(0, 240, 255, 0.7), 0 0 10px rgba(0, 240, 255, 0.5);
+      }
+      .text-shadow-purple {
+        text-shadow: 0 0 5px rgba(157, 78, 221, 0.7), 0 0 10px rgba(157, 78, 221, 0.5);
+      }
+      .bg-grid {
+        background-image: linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+      .scanline {
+        background: linear-gradient(to bottom, 
+                    rgba(0, 240, 255, 0) 0%, 
+                    rgba(0, 240, 255, 0.2) 50%, 
+                    rgba(0, 240, 255, 0) 100%);
+        background-size: 100% 4px;
+        animation: scan 4s linear infinite;
+      }
+      .door-hover {
+        transition: all 0.3s ease;
+      }
+      .door-hover:hover {
+        transform: scale(1.03);
+        filter: brightness(1.1);
+      }
+      .story-fade {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+      }
+      .story-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .typing-cursor {
+        border-right: 2px solid rgba(0, 240, 255, 0.7);
+        animation: blink 1s step-end infinite;
+      }
+      @keyframes blink {
+        from, to { border-color: transparent }
+        50% { border-color: rgba(0, 240, 255, 0.7) }
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="font-cyber bg-cyber-dark overflow-hidden h-screen m-0 p-0">
+  <div id="game-container" class="relative w-full h-screen">
+    <!-- 背景图层 -->
+    <div id="background" class="absolute inset-0 bg-cyber-dark bg-grid">
+      <!-- 粒子效果容器 -->
+      <div id="particles" class="absolute inset-0"></div>
+      <!-- 扫描线效果 -->
+      <div class="scanline absolute inset-0 pointer-events-none"></div>
+    </div>
+
+    <!-- 游戏标题区域 -->
+    <div class="absolute top-1/6 left-0 right-0 flex flex-col items-center justify-center z-10">
+      <h1 id="game-title" class="text-[clamp(2.5rem,8vw,5rem)] font-bold text-neon-blue text-shadow-neon mb-4 opacity-0"></h1>
+      <p id="game-subtitle" class="text-[clamp(1rem,3vw,1.5rem)] text-white/80 opacity-0"></p>
+    </div>
+
+    <!-- 故事情节区域 -->
+    <div class="absolute bottom-1/4 left-0 right-0 max-w-3xl mx-auto px-6 z-10">
+      <div id="story-container" class="bg-cyber-medium/60 backdrop-blur-sm border border-neon-blue/30 rounded-lg p-6">
+        <h2 class="text-neon-blue text-xl mb-4 text-shadow-neon">故事背景</h2>
+        <div id="story-text" class="text-white/90 leading-relaxed space-y-4">
+          <p class="story-fade">2125年,人类发现"维度裂隙",让现实空间产生了逻辑悖论的量子现象。</p>
+          <p class="story-fade">前任“维度修复师”进入裂缝后，他神秘失踪，所有的门也开始变得不稳定...</p>
+          <p class="story-fade">你是一名"维度修复师"，你进入联合国秘密组织"维度研究所"。</p>
+          <p class="story-fade">组织让你进入这些维度裂缝，救回前任"维度修复师"，修复裂缝。</p>
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <!-- 操作提示 -->
+    <div class="absolute bottom-8 left-0 right-0 flex justify-center z-10" onclick="window.location.href='impossible_game1.html'">
+      <p class="text-white/70 text-sm">点击进入第一关 </p>
+    </div>
+  </div>
+
+  <script>
+    // 文字打字效果函数
+    function typeWriter(element, text, speed = 100, callback) {
+      let i = 0;
+      element.textContent = '';
+      element.classList.add('typing-cursor');
+      
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        } else {
+          element.classList.remove('typing-cursor');
+          if (callback) callback();
+        }
+      }
+      
+      type();
+    }
+
+    // 显示故事段落
+    function showStoryParagraphs() {
+      const paragraphs = document.querySelectorAll('.story-fade');
+      paragraphs.forEach((para, index) => {
+        setTimeout(() => {
+          para.classList.add('story-visible');
+        }, 1000 + index * 1500);
+      });
+    }
+
+    
+
+    // 创建粒子效果
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        const size = Math.random() * 3 + 1;
+        
+        particle.style.position = 'absolute';
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = i % 3 === 0 ? 'rgba(0, 240, 255, 0.7)' : 'rgba(157, 78, 221, 0.7)';
+        particle.style.borderRadius = '50%';
+        particle.style.left = `${Math.random() * 100}vw`;
+        particle.style.top = `${Math.random() * 100}vh`;
+        particle.style.animation = `float ${Math.random() * 10 + 10}s linear infinite`;
+        particle.style.animationDelay = `${Math.random() * 5}s`;
+        particle.style.opacity = Math.random() * 0.5 + 0.2;
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // 初始化游戏界面
+    function initGameInterface() {
+      // 显示标题
+      setTimeout(() => {
+        document.getElementById('game-title').style.opacity = '1';
+        document.getElementById('game-title').style.transition = 'opacity 1s ease';
+        typeWriter(document.getElementById('game-title'), '维度断层', 150, () => {
+          // 显示副标题
+          setTimeout(() => {
+            document.getElementById('game-subtitle').style.opacity = '1';
+            document.getElementById('game-subtitle').style.transition = 'opacity 1s ease';
+            typeWriter(document.getElementById('game-subtitle'), '穿越维度的边界', 100, showStoryParagraphs);
+          }, 500);
+        });
+      }, 500);
+      
+      // 创建粒子背景
+      createParticles();
+    }
+
+    // 页面加载完成后初始化
+    window.addEventListener('load', initGameInterface);
+
+  
+  </script>
+</body>
+</html>
