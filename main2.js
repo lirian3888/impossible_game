@@ -378,7 +378,7 @@ function startDirectionalRotation(isCounterClockwise) {
   
   // 检查当前角度是否已达到目标角度(-90度)
   const currentAngle = Math.round(targetObject.rotation.x * 180 / Math.PI);
-  if (currentAngle === 0||currentAngle === 360) {
+  if (currentAngle === 0||currentAngle === 360||currentAngle === -360) {
     updateDebugInfo("已达到目标角度，不能继续旋转");
     return;
   }
@@ -457,7 +457,7 @@ function animate() {
       
       // 检查是否达到目标角度(-90度)
       const currentAngle = Math.round(targetObject.rotation.x * 180 / Math.PI);
-      if (currentAngle === 0||currentAngle === 360) {
+      if (currentAngle === 0||currentAngle === 360||currentAngle === -360) {
         updateDebugInfo("已达到目标角度，准备移动精灵");
         // 旋转完成后开始移动动画
         if (spriteModel) {

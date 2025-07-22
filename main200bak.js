@@ -7,9 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 console.log("main200.js 隐藏关卡开始执行");
 
-// 新增：背景图片相关变量
-let backgroundPlane;
-let backgroundTexture;
+
 
 // 画面加载状态变量（从模糊到清晰）
 let blurIntensity = 15; // 初始模糊强度
@@ -90,42 +88,6 @@ const spriteBTextElement = createTextElement();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1a); // 神秘深色背景
 
-// 新增：创建背景平面
-function createBackgroundPlane() {
-  // 创建纹理加载器
-  const textureLoader = new THREE.TextureLoader();
-  
-  // 加载背景图片，替换为你的图片路径
-  textureLoader.load('mystery_bg.png', (texture) => {
-    backgroundTexture = texture;
-    backgroundTexture.wrapS = THREE.RepeatWrapping;
-    backgroundTexture.wrapT = THREE.RepeatWrapping;
-    
-    // 创建平面几何体，尺寸要足够大以覆盖相机视野
-    const geometry = new THREE.PlaneGeometry(100, 60);
-    // 使用加载的纹理创建材质
-    const material = new THREE.MeshBasicMaterial({ 
-      map: texture,
-      side: THREE.DoubleSide // 双面可见
-    });
-    
-    // 创建平面网格并添加到场景
-    backgroundPlane = new THREE.Mesh(geometry, material);
-    // 将平面放置在相机后方，确保它总是可见且不会被其他物体遮挡
-    backgroundPlane.position.z = -20;
-    backgroundPlane.position.y = 5; // 稍微向上调整
-    
-    // 确保背景平面不会受到后期处理的影响
-    backgroundPlane.layers.set(1); // 设置到不同图层
-    
-    scene.add(backgroundPlane);
-    updateDebugInfo("背景图片加载完成");
-  }, undefined, (error) => {
-    console.error('背景图片加载失败:', error);
-    updateDebugInfo("背景图片加载失败，使用默认背景");
-  });
-}
-
 // 相机设置
 const camera = new THREE.PerspectiveCamera(
   50,
@@ -135,7 +97,6 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.copy(fixedCameraPos);
 camera.lookAt(fixedLookAtPos);
-camera.layers.enable(1); // 确保相机能看到背景图层
 
 // 渲染器（带模糊效果）
 const canvas = document.getElementById('gameCanvas');
@@ -170,20 +131,12 @@ function updateRendererSize() {
   camera.updateProjectionMatrix();
   bloomPass.setSize(width, height);
   
-  // 调整背景平面大小以适应窗口变化
-  if (backgroundPlane) {
-    const aspectRatio = width / height;
-    backgroundPlane.scale.set(aspectRatio * 1.5, 1.5, 1);
-  }
-  
   updateDebugInfo(`画面尺寸: ${width}x${height} | 神秘场景加载中`);
 }
-
-// 新增：调用创建背景平面函数
-createBackgroundPlane();
-
 updateRendererSize();
 window.addEventListener('resize', updateRendererSize);
+
+
 
 const directionalLight = new THREE.DirectionalLight(0x444488, 0.3);
 directionalLight.position.set(-5, 8, -3);
@@ -192,6 +145,8 @@ scene.add(directionalLight);
 const directionalLight1 = new THREE.DirectionalLight(0x444488, 0.3);
 directionalLight1.position.set(2.28, 10.6, 6.82);
 scene.add(directionalLight1);
+
+
 
 // 加载模型
 const loader = new GLTFLoader();
@@ -260,6 +215,12 @@ function loadSpriteModel() {
       spriteModel.position.copy(movePath[0]);
       scene.add(spriteModel);
       updateDebugInfo("原有精灵加载完成");
+      
+      // // 延迟开始移动（等待精灵B对话开始后再移动）--->对话结束后再移动，
+      // setTimeout(() => {
+      //   isMoving = true;
+      //   moveStartTime = Date.now();
+      // }, 3000);
     },
     (xhr) => {
       const percent = (xhr.loaded / xhr.total * 100).toFixed(1);
