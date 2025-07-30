@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D解密游戏 - 模型查看器</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+        }
+        
+        #modelContainer {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background-color: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #0f4cd1;
+            transform: translateY(-2px);
+        }
+        
+        #levelInfo {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            z-index: 20;
+            display: none;
+        }
+        
+        #instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="levelInfo">场景 1/5</div>
+    <div id="instructions">拖动鼠标旋转模型 | 滚轮缩放 | 右键平移</div>
+    <div id="loading">加载中...</div>
+    <div id="modelContainer"></div>
+    <div id="controls">
+        <button id="nextModel">下一个模型</button>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+        // 模型列表
+        const modelFiles = [
+            'scene_first.gltf',      // 第一关
+            'level2.gltf',           // 第二关
+            'level2.1_1.gltf',       // 第三关
+            'level3.gltf',           // 第四关
+            'level4_new3.gltf'       // 第五关
+        ];
+        
+        // 各关卡相机位置配置 (按顺序对应上面的模型)
+        const cameraPositions = [
+            { x: 23.587, y: 27.852, z: 30.605 },   // 第一关
+            { x: 22.961, y: 27.078, z: 27.304 },   // 第二关
+            { x: 6.019, y: 20.513, z: 15.427 },    // 第三关
+            { x: -0.045, y: 20.503, z: 9.528 },    // 第四关
+            { x: 41.274, y: 46.206, z: 34.775 }    // 第五关
+        ];
+        
+        let currentModelIndex = 0;
+        let currentModel = null;
+        let isLoading = false;
+
+        // 初始化场景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+
+        // 相机设置
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        // 初始相机位置会在加载第一个模型时设置
+
+        // 渲染器设置
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('modelContainer').appendChild(renderer.domElement);
+
+        // 添加光源
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // 添加轨道控制器 - 支持鼠标交互
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // 启用阻尼效果，使旋转更平滑
+        controls.dampingFactor = 0.1;
+        controls.enableZoom = true; // 允许缩放
+        controls.enablePan = true; // 允许平移
+
+        // 初始化模型加载器
+        const loader = new GLTFLoader();
+        
+        // 添加DRACO解码器支持
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+        loader.setDRACOLoader(dracoLoader);
+
+        // 加载第一个模型
+        loadModel(currentModelIndex);
+
+        // 加载模型函数
+        function loadModel(index) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            document.getElementById('loading').style.display = 'block';
+            
+            // 移除当前模型
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
+
+            const modelFile = modelFiles[index];
+            
+            loader.load(
+                modelFile,
+                (gltf) => {
+                    currentModel = gltf.scene;
+                    
+                    // 计算模型尺寸并居中
+                    const box = new THREE.Box3().setFromObject(currentModel);
+                    const center = box.getCenter(new THREE.Vector3());
+                    currentModel.position.sub(center); // 居中模型
+                    
+                    scene.add(currentModel);
+                    
+                    // 设置当前关卡的相机位置
+                    const cameraPos = cameraPositions[index];
+                    camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z);
+                    camera.lookAt(0, 0, 0); // 所有关卡都看向原点
+                    
+                    // 更新控制器目标
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                    
+                    // 更新信息
+                    document.getElementById('levelInfo').textContent = `场景 ${index + 1}/${modelFiles.length}`;
+                    isLoading = false;
+                    document.getElementById('loading').style.display = 'none';
+                },
+                (xhr) => {
+                    console.log(`加载进度: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`);
+                },
+                (error) => {
+                    console.error('模型加载错误:', error);
+                    alert('模型加载失败: ' + error.message);
+                    isLoading = false;
+                    document.getElementById('loading').style.display = 'none';
+                }
+            );
+        }
+
+        // 切换到下一个模型
+        document.getElementById('nextModel').addEventListener('click', () => {
+            currentModelIndex = (currentModelIndex + 1) % modelFiles.length;
+            loadModel(currentModelIndex);
+        });
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // 更新控制器
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

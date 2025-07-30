@@ -102,8 +102,11 @@
       </div>
     </div>
     
-    <!-- 操作按钮 - 只保留返回主页 -->
-    <div class="mt-12 transition-all duration-1000 delay-500 opacity-0 transform translate-y-8">
+    <!-- 操作按钮 - 添加了解密按钮 -->
+    <div class="mt-12 flex flex-col sm:flex-row gap-4 transition-all duration-1000 delay-500 opacity-0 transform translate-y-8">
+      <button id="解密按钮" class="px-8 py-3 bg-transparent border border-primary text-primary hover:bg-primary/10 font-future rounded-lg transition-all duration-300">
+        <i class="fa fa-unlock-alt mr-2"></i>进入解密
+      </button>
       <button id="返回主页按钮" class="px-8 py-3 bg-transparent border border-secondary text-secondary hover:bg-secondary/10 font-future rounded-lg transition-all duration-300">
         <i class="fa fa-home mr-2"></i>返回主页
       </button>
@@ -237,7 +240,13 @@
       // 创建匹配结局的粒子效果
       createParticles(hasItem);
       
-      // 按钮事件 - 返回主页时清空道具
+      // 解密按钮事件
+      document.getElementById('解密按钮').addEventListener('click', () => {
+        // 跳转到解密页面
+        window.location.href = 'jiemi.html';
+      });
+      
+      // 返回主页按钮事件 - 返回主页时清空道具
       document.getElementById('返回主页按钮').addEventListener('click', () => {
         // 清空localStorage中的道具数据
         localStorage.removeItem('gameItems');
