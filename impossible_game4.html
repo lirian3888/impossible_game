@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>关卡2</title>
+  <title>关卡4</title>
   <style>
     body { 
       margin: 0; 
@@ -10,11 +10,16 @@
       height: 100vh;
     }
     canvas { 
-      display: none; /* 初始隐藏canvas */
+      display: block; /* 初始隐藏canvas */
       position: absolute; /* 绝对定位 */
       top: 0;
       left: 0;
     }
+    #gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
     #bgContainer {
       position: fixed;
       top: 0;
@@ -58,7 +63,7 @@
 
   <script type="importmap">
   {
-    "imports": {
+     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/"
     }
@@ -68,9 +73,8 @@
 <body>
   <!-- 背景图容器 -->
   <div id="bgContainer">
-    <img id="bgImage" src="door2.png" alt="背景图">
-    <div id="clickPrompt"> 全球污染进一步恶化，<br>工业垃圾进入维度裂缝，<br>裂缝变的不稳定。<br>现实世界开始出现小型悖论物体，<br>部分地区维度扭曲，<br>你需要通过旋转虚拟模型，<br>来预测并封锁现实中的裂隙。<br>点击进入第二个维度裂缝,进行维修吧。 </div>
-  </div>
+    <img id="bgImage" src="door6.png" alt="背景图">
+    <div id="clickPrompt"> <br>这是埋在南极冰盖下的不可能图形，<br>一百万年前形成的维度裂缝，<br>也是前任维度修复师消失的地方......
 
   <!-- 调试信息面板 -->
   <div id="debugInfo"></div>
@@ -95,10 +99,10 @@
       // 显示调试信息
       debugInfo.textContent = "正在加载场景...";
       
-      // 动态加载并执行main2.js
+      // 动态加载并执行main4.js
       const script = document.createElement('script');
       script.type = 'module';
-      script.src = 'main2.js';
+      script.src = 'main4.js';
       document.body.appendChild(script);
     });
   </script>

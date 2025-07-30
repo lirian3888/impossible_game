@@ -4,7 +4,18 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { Audio, AudioLoader, AudioListener } from 'three';
 
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+// 创建DRACOLoader实例
+const dracoLoader = new DRACOLoader();
+// 使用CDN上的解码器，无需本地文件
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+
+// 音频相关变量（精简）
+let backgroundMusic;       // 背景音乐对象
+let isMusicPlaying = false; // 播放状态
 console.log("main200.js 隐藏关卡开始执行");
 
 // 新增：背景图片相关变量
@@ -35,7 +46,8 @@ let moveStartTime = 0;
 let spriteBText = [
   "这里是另一个维度的缝隙...",
   "小心前方的未知存在...",
-  "当柱子升起时，通道将开启...",
+  "当柱子升起时，通道将开启，...",
+  "记事本向你展开，你将得到惊人的发现...",
   "再见了，勇敢的探索者..."
 ]; // 可修改的对话内容
 let currentTextIndex = 0;
@@ -90,41 +102,31 @@ const spriteBTextElement = createTextElement();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1a); // 神秘深色背景
 
-// 新增：创建背景平面
-function createBackgroundPlane() {
-  // 创建纹理加载器
-  const textureLoader = new THREE.TextureLoader();
-  
-  // 加载背景图片，替换为你的图片路径
-  textureLoader.load('mystery_bg.png', (texture) => {
-    backgroundTexture = texture;
-    backgroundTexture.wrapS = THREE.RepeatWrapping;
-    backgroundTexture.wrapT = THREE.RepeatWrapping;
-    
-    // 创建平面几何体，尺寸要足够大以覆盖相机视野
-    const geometry = new THREE.PlaneGeometry(100, 60);
-    // 使用加载的纹理创建材质
-    const material = new THREE.MeshBasicMaterial({ 
-      map: texture,
-      side: THREE.DoubleSide // 双面可见
-    });
-    
-    // 创建平面网格并添加到场景
-    backgroundPlane = new THREE.Mesh(geometry, material);
-    // 将平面放置在相机后方，确保它总是可见且不会被其他物体遮挡
-    backgroundPlane.position.z = -20;
-    backgroundPlane.position.y = 5; // 稍微向上调整
-    
-    // 确保背景平面不会受到后期处理的影响
-    backgroundPlane.layers.set(1); // 设置到不同图层
-    
-    scene.add(backgroundPlane);
-    updateDebugInfo("背景图片加载完成");
-  }, undefined, (error) => {
-    console.error('背景图片加载失败:', error);
-    updateDebugInfo("背景图片加载失败，使用默认背景");
-  });
-}
+// 添加从右到左的平行光（修改方向）
+const rightToLeftLight = new THREE.DirectionalLight(0xffffff, 0.8);
+// 设置光源位置在右侧
+rightToLeftLight.position.set(10, 0, 0);
+// 设置光线照射方向为左侧
+rightToLeftLight.target.position.set(-10, 0, 0);
+// 允许该光源产生阴影
+rightToLeftLight.castShadow = true;
+// 添加光源到场景
+scene.add(rightToLeftLight);
+// 添加光源目标到场景
+scene.add(rightToLeftLight.target);
+
+
+// 添加沿-45度方向的平行光（从后右方向前左方照射）
+const diagonalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+// 光源位置：后方（负z）且右侧（正x），形成-45度方向
+diagonalLight.position.set(10, 0, -10);
+// 照射目标：前方（正z）且左侧（负x），与光源位置形成-45度夹角
+diagonalLight.target.position.set(-10, 0, 10);
+diagonalLight.castShadow = true;
+scene.add(diagonalLight);
+scene.add(diagonalLight.target);
+
+
 
 // 相机设置
 const camera = new THREE.PerspectiveCamera(
@@ -179,8 +181,7 @@ function updateRendererSize() {
   updateDebugInfo(`画面尺寸: ${width}x${height} | 神秘场景加载中`);
 }
 
-// 新增：调用创建背景平面函数
-createBackgroundPlane();
+
 
 updateRendererSize();
 window.addEventListener('resize', updateRendererSize);
@@ -195,7 +196,7 @@ scene.add(directionalLight1);
 
 // 加载模型
 const loader = new GLTFLoader();
-
+loader.setDRACOLoader(dracoLoader);
 // 加载隐藏关卡专属3D模型
 loader.load(
   'level2.1_1.gltf', // 复用修改后的模型文件
@@ -253,11 +254,12 @@ function findObjectByNameRecursive(parent, name) {
 // 加载原有精灵
 function loadSpriteModel() {
   loader.load(
-    'sprite.gltf',
+    'sprite.glb',
     (gltf) => {
       spriteModel = gltf.scene;
-      spriteModel.scale.set(0.25, 0.25, 0.25);
+      spriteModel.scale.set(1, 1, 1);
       spriteModel.position.copy(movePath[0]);
+      spriteModel.rotation.y = Math.PI/2;
       scene.add(spriteModel);
       updateDebugInfo("原有精灵加载完成");
     },
@@ -272,11 +274,13 @@ function loadSpriteModel() {
 // 加载精灵B
 function loadSpriteB() {
   loader.load(
-    'sprite_b.gltf', // 精灵B模型
+    'sprite_b.glb', // 精灵B模型
     (gltf) => {
       spriteB = gltf.scene;
-      spriteB.scale.set(0.25, 0.25, 0.25);
-      spriteB.position.set(-0.622, 2.5, 4);
+      spriteB.scale.set(0.5,0.4,0.5);
+      spriteB.rotation.y=-Math.PI/2
+      //spriteB.position.set(-0.622, 2.5, 4);（位置错误）
+      spriteB.position.set(-2, 2.5, 4);
       scene.add(spriteB);
       
       // 确保精灵B材质支持透明度
@@ -317,6 +321,13 @@ function calculatePositionOnPath(progress) {
   const totalSegments = movePath.length - 1;
   const segment = Math.min(Math.floor(progress * totalSegments), totalSegments - 1);
   const segmentProgress = (progress * totalSegments) - segment;
+  if (segment==1){
+    spriteModel.rotation.y = Math.PI;
+  }
+  if (segment==2){
+    spriteModel.rotation.y = 3*Math.PI/2;
+  }
+  
   const start = movePath[segment];
   const end = movePath[segment + 1];
   const position = new THREE.Vector3();
@@ -329,9 +340,15 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-// 动画循环
+// 添加状态标记，控制动画和记事本显示
+let isAnimating = true;       // 动画是否继续运行
+let notebookShown = false;    // 记事本是否已显示
+
 function animate() {
-  requestAnimationFrame(animate);
+  // 只有动画状态为true时才继续循环
+  if (isAnimating) {
+    requestAnimationFrame(animate);
+  }
 
   // 画面从模糊到清晰效果
   if (isFadingIn) {
@@ -426,17 +443,145 @@ function animate() {
       targetPillar.material.emissiveIntensity = easeProgress * 0.5;
     }
     
-    if (progress >= 1) {
+    if (progress >= 1&& !notebookShown) {
       updateDebugInfo("柱子完全升起，隐藏关卡结束");
-      // 关卡结束逻辑
-      setTimeout(() => {
-        // window.location.href = 'next_level.html'; // 替换为实际下一关卡
-      }, 2000);
+      // window.location.href = 'impossible_game3.html'; //window.location.href = 'main200.html'; //
+     updateDebugInfo("柱子完全升起，显示隐藏信息");
+     // 标记记事本已显示，防止重复创建
+    notebookShown = true;
+    // 停止动画循环（可选，根据需求决定是否完全停止动画）
+    isAnimating = false;
+    // 创建记事本容器
+    const notebookContainer = document.createElement('div');
+    notebookContainer.style.position = 'fixed';
+    notebookContainer.style.top = '0';
+    notebookContainer.style.left = '0';
+    notebookContainer.style.width = '100%';
+    notebookContainer.style.height = '100%';
+    notebookContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    notebookContainer.style.display = 'flex';
+    notebookContainer.style.justifyContent = 'center';
+    notebookContainer.style.alignItems = 'center';
+    notebookContainer.style.zIndex = '1000';
+    notebookContainer.id = 'notebookContainer';
+    
+    // 创建记事本元素
+    const notebook = document.createElement('div');
+    notebook.style.width = '80%';
+    notebook.style.maxWidth = '600px';
+    notebook.style.backgroundColor = '#f8f5e6';
+    notebook.style.borderRadius = '8px';
+    notebook.style.boxShadow = '0 0 20px 5px rgba(255, 255, 100, 0.8), 0 0 30px 10px rgba(255, 255, 150, 0.5)';
+    notebook.style.padding = '30px';
+    notebook.style.position = 'relative';
+    notebook.style.transform = 'perspective(1000px) rotateX(5deg)';
+    notebook.style.transition = 'all 0.3s ease';
+    notebook.style.cursor = 'pointer';
+    notebook.style.fontFamily = 'Arial, sans-serif';
+    
+    // 添加记事本悬停效果
+    notebook.addEventListener('mouseover', () => {
+        notebook.style.transform = 'perspective(1000px) rotateX(3deg) scale(1.02)';
+        notebook.style.boxShadow = '0 0 25px 8px rgba(255, 255, 100, 0.9), 0 0 35px 15px rgba(255, 255, 150, 0.6)';
+    });
+    
+    notebook.addEventListener('mouseout', () => {
+        notebook.style.transform = 'perspective(1000px) rotateX(5deg)';
+        notebook.style.boxShadow = '0 0 20px 5px rgba(255, 255, 100, 0.8), 0 0 30px 10px rgba(255, 255, 150, 0.5)';
+    });
+    
+    // 添加记事本内容
+    notebook.innerHTML = `
+        <h2 style="text-align: center; color: #8b4513; margin-bottom: 20px;">神秘笔记</h2>
+        <div style="color: #333; line-height: 1.8; padding: 10px; border-left: 2px solid #d2b48c;">
+            <p>2125/7/8</p>
+            <ul style="margin-left: 20px;">
+                2050年，全球变暖日益严重，南极冰盖迅速融化，环境遭到污染；板块运动和火山爆发频发。<br>2090年，板块和地形发生了巨大改变，亚欧板块向东移动到东经10°~165°美洲板块向北移动至北极点，印度板块向东飘到从前夏威夷岛的位置，地球平均海拔降低10m，青藏高原海拔降低约830m，南非高原和科迪勒拉山系抬升约500m，部分陆地被海水淹没澳大利亚已变成西，东南，东北三个部分，日本沉入马里亚纳海沟......<br>2120年，孢子植物迅速繁衍，基因突变后影响人类生活，威胁北美洲，政府不得不建造空中城市。这些植物的基因突变正是因为废气、废水，甚至是核污染。<br>"维度裂隙"实为高维生命体的观察窗口，他们发现了地球污染，正在通过维度裂缝对人类行为进行了研究。
+            </ul>
+            <p style="margin-top: 15px;">点击笔记本继续前进...</p>
+        </div>
+    `;
+    
+    // 点击记事本后跳转，并确保动画循环已停止
+    notebook.addEventListener('click', () => {
+      document.body.removeChild(notebookContainer);
+      window.location.href = 'impossible_game3.html';
+    });
+
+    notebookContainer.appendChild(notebook);
+    document.body.appendChild(notebookContainer);
     }
   }
 
   // 使用后期处理渲染
   composer.render();
 }
+
+// 初始化音频（固定相机专用）
+function initAudio(musicPath) {
+  // 创建监听者（无需跟随相机移动，因为相机固定）
+  const audioListener = new AudioListener();
+  
+  // 监听者仍需添加到相机（但相机不动，所以只需添加一次）
+  camera.add(audioListener);
+  
+  // 加载音乐
+  const audioLoader = new AudioLoader();
+  audioLoader.load(
+    musicPath,
+    (buffer) => {
+      backgroundMusic = new Audio(audioListener);
+      backgroundMusic.setBuffer(buffer);
+      backgroundMusic.setLoop(true); // 循环播放
+      backgroundMusic.setVolume(0.5); // 音量
+      console.log("背景音乐加载完成");
+
+      // 读取localStorage中的音乐状态
+      const savedMusicState = localStorage.getItem('gameMusicEnabled');
+      isMusicPlaying = savedMusicState === 'true';
+
+      // 根据保存的状态决定是否播放
+      if (isMusicPlaying) {
+        backgroundMusic.play().catch(err => {
+          console.log("自动播放需要用户交互，等待用户操作...", err);
+        });
+      }
+    },
+    (xhr) => console.log(`音乐加载中: ${(xhr.loaded/xhr.total*100).toFixed(1)}%`),
+    (err) => console.error("音乐加载失败:", err)
+  );
+}
+
+// 播放/暂停控制（简化）
+function toggleMusic() {
+  if (!backgroundMusic) return;
+  
+  isMusicPlaying ? backgroundMusic.pause() : backgroundMusic.play();
+  isMusicPlaying = !isMusicPlaying;
+  // 如需更新按钮文字，可在此处添加
+   localStorage.setItem('gameMusicEnabled', isMusicPlaying);
+}
+
+// 创建控制按钮（可选，固定样式）
+function createMusicButton() {
+  const btn = document.createElement('button');
+  btn.textContent = '音乐开启/关闭';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    z-index: 100;
+  `;
+  btn.onclick = toggleMusic;
+  document.body.appendChild(btn);
+}
+
+// 在相机初始化完成后调用
+// 示例：传入当前关卡的音乐路径
+initAudio('music.mp3');
+
+// 创建控制按钮（可选）
+createMusicButton();
 
 animate();

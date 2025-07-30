@@ -196,6 +196,7 @@
 
     // 初始化游戏界面
     function initGameInterface() {
+      localStorage.removeItem('gameItems');
       // 显示标题
       setTimeout(() => {
         document.getElementById('game-title').style.opacity = '1';

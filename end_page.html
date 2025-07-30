@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>维度裂缝 - 结局</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6C5CE7',
+            secondary: '#00CEFF',
+            accent: '#FF2E63',
+            dark: '#111827',
+            darker: '#0B1120'
+          },
+          fontFamily: {
+            future: ['Orbitron', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+      }
+      .glow {
+        box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+      }
+      .bg-grid {
+        background-image: 
+          linear-gradient(rgba(108, 92, 231, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(108, 92, 231, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+    }
+  </style>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="overflow-hidden bg-darker text-white font-sans">
+  <!-- 粒子背景容器 -->
+  <div id="particleContainer" class="fixed inset-0 z-0"></div>
+  
+  <!-- 背景图容器（动态切换） -->
+  <div id="backgroundImage" class="fixed inset-0 z-0 opacity-0 bg-cover bg-center transition-opacity duration-1500"></div>
+  
+  <!-- 网格背景 -->
+  <div class="fixed inset-0 z-10 bg-grid opacity-50"></div>
+  
+  <!-- 主内容容器 -->
+  <div class="relative z-20 min-h-screen flex flex flex-col items-center justify-center px-4 py-8">
+    <!-- 标题 -->
+    <h1 id="结局标题" class="font-future font-bold text-[clamp(2rem,5vw,4rem)] mb-8 text-center transition-all duration-1000 opacity-0 transform translate-y-8">
+      <span class="text-primary text-shadow">维度</span>
+      <span class="text-secondary text-shadow">结局</span>
+    </h1>
+    
+    <!-- 结局内容容器 -->
+    <div id="结局内容" class="max-w-2xl w-full bg-dark/60 backdrop-blur-lg rounded-xl p-8 border border-primary/30 shadow-xl transition-all duration-1000 opacity-0 transform translate-y-8">
+      <!-- 失败结局 -->
+      <div id="失败结局" class="hidden">
+        <div class="flex justify-center mb-6">
+          <div class="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center border-2 border-accent animate-pulse">
+            <i class="fa fa-exclamation-triangle text-4xl text-accent text-shadow"></i>
+          </div>
+        </div>
+        <h2 class="font-future text-2xl md:text-3xl font-semibold mb-6 text-center text-accent text-shadow">任务失败</h2>
+        <p class="text-lg md:text-xl leading-relaxed mb-6 text-gray-200">
+          您没找到道具，没有成功封闭裂缝。空间结构开始崩溃，周围的物理法则逐渐失效。
+        </p>
+        <p class="text-lg md md:text-xl leading-relaxed text-gray-200">
+          在最后一刻，您被卷进了不稳定的虫洞，从此杳无音信，成为了维度间隙中的又一个谜团...
+        </p>
+      </div>
+      
+      <!-- 成功结局 -->
+      <div id="成功结局" class="hidden">
+        <div class="flex justify-center mb-6">
+          <div class="w-24 h-24 rounded-full bg-secondary/20 flex items-center justify-center border-2 border-secondary animate-pulse">
+            <i class="fa fa-check-circle text-4xl text-secondary text-shadow"></i>
+          </div>
+        </div>
+        <h2 class="font-future text-2xl md:text-3xl font-semibold mb-6 text-center text-secondary text-shadow">任务完成</h2>
+        <p class="text-lg md:text-xl leading-relaxed mb-6 text-gray-200">
+          您成功找到了"维度稳定器"，利用它的力量安全进入虫洞。在高维空间中，您找到了被困的前任"维度修复师"。
+        </p>
+        <p class="text-lg md:text-xl leading-relaxed text-gray-200">
+          在他的指导和高维生命的帮助下，你们共同修复了维度裂缝，消除了跨维度污染，恢复了空间的稳定。
+        </p>
+      </div>
+    </div>
+    
+    <!-- 操作按钮 - 只保留返回主页 -->
+    <div class="mt-12 transition-all duration-1000 delay-500 opacity-0 transform translate-y-8">
+      <button id="返回主页按钮" class="px-8 py-3 bg-transparent border border-secondary text-secondary hover:bg-secondary/10 font-future rounded-lg transition-all duration-300">
+        <i class="fa fa-home mr-2"></i>返回主页
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 检查是否收集了道具
+    function checkItemCollected() {
+      try {
+        const items = JSON.parse(localStorage.getItem('gameItems')) || [];
+        return items.some(item => item.name === '维度稳定器');
+      } catch (error) {
+        console.error('检查道具失败:', error);
+        return false;
+      }
+    }
+    
+    // 显示对应的结局并设置背景图
+    function show结局() {
+      const hasItem = checkItemCollected();
+      const 失败结局 = document.getElementById('失败结局');
+      const 成功结局 = document.getElementById('成功结局');
+      const 背景图容器 = document.getElementById('backgroundImage');
+      
+      // 设置背景图
+      if (hasItem) {
+        背景图容器.style.backgroundImage = "url('nature.jpg')";
+        成功结局.classList.remove('hidden');
+      } else {
+        背景图容器.style.backgroundImage = "url('chongdong.jpeg')";
+        失败结局.classList.remove('hidden');
+      }
+      
+      // 淡入背景图
+      setTimeout(() => {
+        背景图容器.style.opacity = "0.3";
+      }, 300);
+      
+      // 触发内容动画
+      setTimeout(() => {
+        document.getElementById('结局标题').classList.remove('opacity-0', 'translate-y-8');
+      }, 500);
+      
+      setTimeout(() => {
+        document.getElementById('结局内容').classList.remove('opacity-0', 'translate-y-8');
+      }, 800);
+      
+      setTimeout(() => {
+        document.querySelector('.mt-12').classList.remove('opacity-0', 'translate-y-8');
+      }, 1100);
+    }
+    
+    // 创建粒子效果
+    function createParticles(hasItem) {
+      const container = document.getElementById('particleContainer');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      // 创建场景
+      const scene = new THREE.Scene();
+      
+      // 创建相机
+      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      camera.position.z = 5;
+      
+      // 创建渲染器
+      const renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(width, height);
+      container.appendChild(renderer.domElement);
+      
+      // 创建粒子
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 1500;
+      
+      const posArray = new Float32Array(particlesCount * 3);
+      
+      for (let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 20;
+      }
+      
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      
+      // 根据结局设置粒子颜色（成功：自然蓝，失败：虫洞红）
+      const particleColor = hasItem ? 0x00CEFF : 0xFF2E63;
+      
+      // 粒子材质
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.02,
+        color: particleColor,
+        transparent: true,
+        opacity: 0.8
+      });
+      
+      // 创建粒子系统
+      const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
+      
+      // 动画循环
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        particlesMesh.rotation.x += 0.0005;
+        particlesMesh.rotation.y += 0.0005;
+        
+        renderer.render(scene, camera);
+      }
+      
+      // 响应窗口大小变化
+      window.addEventListener('resize', () => {
+        const newWidth = container.clientWidth;
+        const newHeight = container.clientHeight;
+        
+        camera.aspect = newWidth / newHeight;
+        camera.updateProjectionMatrix();
+        
+        renderer.setSize(newWidth, newHeight);
+      });
+      
+      animate();
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      // 检查是否有道具
+      const hasItem = checkItemCollected();
+      
+      // 显示结局并设置背景
+      show结局();
+      
+      // 创建匹配结局的粒子效果
+      createParticles(hasItem);
+      
+      // 按钮事件 - 返回主页时清空道具
+      document.getElementById('返回主页按钮').addEventListener('click', () => {
+        // 清空localStorage中的道具数据
+        localStorage.removeItem('gameItems');
+        console.log('道具数据已清空');
+        
+        // 跳转到主页
+        window.location.href = 'index.html';
+      });
+    });
+  </script>
+</body>
+</html>

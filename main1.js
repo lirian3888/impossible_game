@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Audio, AudioLoader, AudioListener } from 'three';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+// 创建DRACOLoader实例
+const dracoLoader = new DRACOLoader();
+// 使用CDN上的解码器，无需本地文件
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+
+// 音频相关变量（精简）
+let backgroundMusic;       // 背景音乐对象
+let isMusicPlaying = false; // 播放状态
 
 console.log("main.js 开始执行");
 
@@ -258,10 +269,12 @@ loader.load(
 // 新增：加载精灵模型
 function loadSpriteModel() {
   const spriteLoader = new GLTFLoader();
+
+  spriteLoader.setDRACOLoader(dracoLoader);
   updateDebugInfo("加载精灵模型中...");
   
   spriteLoader.load(
-    'sprite.gltf', // 替换为你的精灵模型路径
+    'sprite.glb', // 替换为你的精灵模型路径
     function(gltf) {
       spriteModel = gltf.scene;
       
@@ -275,7 +288,7 @@ function loadSpriteModel() {
         spriteModel.position.z = 0; // 稍微抬高一点
         
         // 设置精灵大小
-        spriteModel.scale.set(0.5, 0.5, 0.5);
+        spriteModel.scale.set(1, 1, 1);
         
         scene.add(spriteModel);
         updateDebugInfo("精灵模型加载完成，请点击按钮旋转物体");
@@ -446,14 +459,14 @@ function animate() {
 function createNextLevelButton() {
   // 创建按钮元素
   const fin_btn = document.createElement('button');
-  fin_btn.textContent = '你已经对第一个维度缝隙进行了修补，现在点击进入下一个维度断层';
+  fin_btn.textContent = '你已经对第一个维度缝隙进行了修补，现在点击文字进入下一个维度断层';
   fin_btn.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding: 16px 32px; background: #4a6cf7; color: white; border-radius:8px; font-size:18px; z-index:100;';
   fin_btn.onclick = () => window.location.href = 'impossible_game2.html';
 
   // 添加到页面
   document.body.appendChild(fin_btn);
 }
-animate();
+
 
 // 计算在路径上的位置
 function calculatePositionOnPath(progress) {
@@ -481,3 +494,70 @@ function calculatePositionOnPath(progress) {
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
+
+// 初始化音频（固定相机专用）
+function initAudio(musicPath) {
+  // 创建监听者（无需跟随相机移动，因为相机固定）
+  const audioListener = new AudioListener();
+  
+  // 监听者仍需添加到相机（但相机不动，所以只需添加一次）
+  camera.add(audioListener);
+  
+  // 加载音乐
+  const audioLoader = new AudioLoader();
+  audioLoader.load(
+    musicPath,
+    (buffer) => {
+      backgroundMusic = new Audio(audioListener);
+      backgroundMusic.setBuffer(buffer);
+      backgroundMusic.setLoop(true); // 循环播放
+      backgroundMusic.setVolume(0.5); // 音量
+      console.log("背景音乐加载完成");
+
+      // 读取localStorage中的音乐状态
+      const savedMusicState = localStorage.getItem('gameMusicEnabled');
+      isMusicPlaying = savedMusicState === 'true';
+
+      // 根据保存的状态决定是否播放
+      if (isMusicPlaying) {
+        backgroundMusic.play().catch(err => {
+          console.log("自动播放需要用户交互，等待用户操作...", err);
+        });
+      }
+    },
+    (xhr) => console.log(`音乐加载中: ${(xhr.loaded/xhr.total*100).toFixed(1)}%`),
+    (err) => console.error("音乐加载失败:", err)
+  );
+}
+
+// 播放/暂停控制（简化）
+function toggleMusic() {
+  if (!backgroundMusic) return;
+  
+  isMusicPlaying ? backgroundMusic.pause() : backgroundMusic.play();
+  isMusicPlaying = !isMusicPlaying;
+  // 如需更新按钮文字，可在此处添加
+  localStorage.setItem('gameMusicEnabled', isMusicPlaying);
+}
+
+// 创建控制按钮（可选，固定样式）
+function createMusicButton() {
+  const btn = document.createElement('button');
+  btn.textContent = '音乐开启/关闭';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    z-index: 100;
+  `;
+  btn.onclick = toggleMusic;
+  document.body.appendChild(btn);
+}
+
+initAudio('music.mp3');
+
+// 创建控制按钮（可选）
+createMusicButton();
+
+animate();

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘笔记</title>
+    <style>
+        #notebookContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #notebook {
+            width: 80%;
+            max-width: 600px;
+            background-color: #f8f5e6;
+            border-radius: 8px;
+            box-shadow: 0 0 20px 5px rgba(255, 255, 100, 0.8), 0 0 30px 10px rgba(255, 255, 150, 0.5);
+            padding: 30px;
+            position: relative;
+            transform: perspective(1000px) rotateX(5deg);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        #notebook:hover {
+            transform: perspective(1000px) rotateX(3deg) scale(1.02);
+            box-shadow: 0 0 25px 8px rgba(255, 255, 100, 0.9), 0 0 35px 15px rgba(255, 255, 150, 0.6);
+        }
+        
+        #notebook h2 {
+            text-align: center;
+            color: #8b4513;
+            margin-bottom: 20px;
+        }
+        
+        .notebook-content {
+            color: #333;
+            line-height: 1.8;
+            padding: 10px;
+            border-left: 2px solid #d2b48c;
+        }
+        
+        .notebook-content p {
+            margin-top: 15px;
+        }
+        
+        .notebook-content ul {
+            margin-left: 20px;
+            list-style-type: none;
+            padding-left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="notebookContainer">
+        <div id="notebook">
+            <h2>神秘笔记</h2>
+            <div class="notebook-content">
+                <p>2125/7/8</p>
+                <ul>
+                    <li>2050年，全球变暖日益严重，南极冰盖迅速融化，环境遭到污染；板块运动和火山爆发频发。<br>
+                    2090年，板块和地形发生了巨大改变，亚欧板块向东移动到东经10°~165°美洲板块向北移动至北极点，印度板块向东飘到从前夏威夷岛的位置，地球平均海拔降低10m，青藏高原海拔降低约830m，南非高原和科迪勒拉山系抬升约500m，部分陆地被海水淹没澳大利亚已变成西，东南，东北三个部分，日本沉入马里亚纳海沟......<br>
+                    2120年，孢子植物迅速繁衍，基因突变后影响人类生活，威胁北美洲，政府不得不建造空中城市。这些植物的基因突变正是因为废气、废水，甚至是核污染。<br>
+                    "维度裂隙"实为高维生命体的观察窗口，他们发现了地球污染，正在通过维度裂缝对人类行为进行了研究。</li>
+                </ul>
+                <p>点击笔记本继续前进...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取笔记本元素
+        const notebook = document.getElementById('notebook');
+        const notebookContainer = document.getElementById('notebookContainer');
+        
+        // 点击记事本后跳转
+        notebook.addEventListener('click', () => {
+            document.body.removeChild(notebookContainer);
+            window.location.href = 'impossible_game3.html';
+        });
+    </script>
+</body>
+</html>

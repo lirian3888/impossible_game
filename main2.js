@@ -1,5 +1,17 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Audio, AudioLoader, AudioListener } from 'three';
+
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+// 创建DRACOLoader实例
+const dracoLoader = new DRACOLoader();
+// 使用CDN上的解码器，无需本地文件
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+
+// 音频相关变量（精简）
+let backgroundMusic;       // 背景音乐对象
+let isMusicPlaying = false; // 播放状态
 
 console.log("main.js 开始执行");
 // 第二个新增
@@ -318,10 +330,11 @@ function startBoxBreak() {
 // 新增：加载精灵模型
 function loadSpriteModel() {
   const spriteLoader = new GLTFLoader();
+  spriteLoader.setDRACOLoader(dracoLoader);
   updateDebugInfo("加载精灵模型中...");
   
   spriteLoader.load(
-    'sprite.gltf', // 替换为你的精灵模型路径
+    'sprite.glb', // 替换为你的精灵模型路径
     function(gltf) {
       spriteModel = gltf.scene;
       
@@ -335,7 +348,7 @@ function loadSpriteModel() {
         spriteModel.position.z = 0.25; // 稍微抬高一点
         
         // 设置精灵大小
-        spriteModel.scale.set(0.5, 0.5, 0.5);
+        spriteModel.scale.set(2, 2, 2);
         
         scene.add(spriteModel);
         updateDebugInfo("精灵模型加载完成，请点击按钮旋转物体");
@@ -409,6 +422,131 @@ function startMoving() {
     console.log('开始移动动画');
     updateDebugInfo("旋转到位，开始移动精灵");
   }
+}
+
+// 动态创建对话框DOM和样式
+function createDialogElements() {
+  // 添加对话框样式
+  const style = document.createElement('style');
+  style.textContent = `
+    .text-shadow { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); }
+    .btn-game { 
+      padding: 0.75rem 1.5rem; 
+      border-radius: 0.375rem; 
+      font-weight: bold; 
+      transition: all 0.3s; 
+      transform: scale(1); 
+      cursor: pointer;
+    }
+    .btn-game:hover { transform: scale(1.05); }
+    .dialog-backdrop { 
+      backdrop-filter: blur(5px); 
+      -webkit-backdrop-filter: blur(5px); 
+      display: none;
+    }
+    .dialog-content {
+      background-color: rgba(74, 108, 247, 0.9);
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+  `;
+  document.head.appendChild(style);
+
+  // 询问对话框
+  const questionDialog = document.createElement('div');
+  questionDialog.id = 'questionDialog';
+  questionDialog.className = 'dialog-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/70';
+  questionDialog.innerHTML = `
+    <div class="dialog-content">
+      <h2 class="text-[clamp(1.2rem,3vw,1.5rem)] text-center mb-6 text-shadow text-white">是否赶紧离开？</h2>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+        <button id="continueBtn" class="btn-game bg-green-600 hover:bg-green-700">
+          继续
+        </button>
+        <button id="escapeBtn" class="btn-game bg-red-600 hover:bg-red-700">
+          撤离
+        </button>
+      </div>
+    </div>
+  `;
+
+  // 道具获取对话框
+  const itemDialog = document.createElement('div');
+  itemDialog.id = 'itemDialog';
+  itemDialog.className = 'dialog-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/70';
+  itemDialog.innerHTML = `
+    <div class="dialog-content">
+      <div class="text-center">
+        <div class="mb-4 p-4 bg-white/10 rounded-lg inline-block">
+          <img id="itemImage" src="daoju.jpg" alt="收集到的道具" class="w-32 h-32 object-contain">
+        </div>
+        <h3 class="text-xl text-yellow-300 text-shadow mb-6">收集到道具一个！</h3>
+        <button id="proceedBtn" class="btn-game bg-blue-600 hover:bg-blue-700">
+          继续游戏
+        </button>
+      </div>
+    </div>
+  `;
+
+  // 添加到页面
+  document.body.appendChild(questionDialog);
+  document.body.appendChild(itemDialog);
+}
+
+// 初始化对话框事件
+function initDialogEvents() {
+  // 继续按钮：显示道具对话框
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    document.getElementById('questionDialog').style.display = 'none';
+    setTimeout(() => {
+      document.getElementById('itemDialog').style.display = 'flex';
+    }, 300);
+  });
+
+  // 继续游戏按钮：保存道具并跳转
+  document.getElementById('proceedBtn').addEventListener('click', () => {
+    saveItem();
+    window.location.href = 'main200.html';
+  });
+
+  // 撤离按钮：直接跳转（不保存道具）
+  document.getElementById('escapeBtn').addEventListener('click', () => {
+    window.location.href = 'main201.html';
+  });
+}
+
+// 保存道具到本地存储
+function saveItem() {
+  try {
+    let items = JSON.parse(localStorage.getItem('gameItems')) || [];
+    items.push({
+      id: 'item_' + Date.now(),
+      name: '维度稳定器',
+      level: '关卡2',
+      collectedAt: new Date().toISOString()
+    });
+    localStorage.setItem('gameItems', JSON.stringify(items));
+    console.log('道具已保存');
+  } catch (error) {
+    console.error('保存道具失败:', error);
+  }
+}
+
+// 显示询问对话框
+function showQuestionDialog() {
+  document.getElementById('questionDialog').style.display = 'flex';
+}
+// 初始化并暴露接口给main2.js
+function initDialogSystem() {
+  createDialogElements();
+  initDialogEvents();
+  
+  // 暴露显示对话框的方法到全局，供main2.js调用
+  window.showGameDialog = showQuestionDialog;
 }
 
 // 动画循环
@@ -563,7 +701,9 @@ function animate() {
       box5Object.position.y = bosx5Object_init_y + 1 ;  
       spriteModel.position.y = box5Object.position.y+1
       isBox5Extending = false;
-      window.location.href = 'main200.html'; // 假设main200.js对应页面为main200.html
+      createDialogElements();
+      showGameDialog();
+      // window.location.href = 'main200.html'; // 假设main200.js对应页面为main200.html
       console.log('Box5伸长完成');
     }
   }
@@ -582,7 +722,9 @@ function createNextLevelButton() {
   // 添加到页面
   document.body.appendChild(fin_btn);
 }
-animate();
+
+
+
 
 // 计算在路径上的位置
 function calculatePositionOnPath(progress) {
@@ -610,3 +752,71 @@ function calculatePositionOnPath(progress) {
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
+
+
+// 初始化音频（固定相机专用）
+function initAudio(musicPath) {
+  // 创建监听者（无需跟随相机移动，因为相机固定）
+  const audioListener = new AudioListener();
+  
+  // 监听者仍需添加到相机（但相机不动，所以只需添加一次）
+  camera.add(audioListener);
+  
+  // 加载音乐
+  const audioLoader = new AudioLoader();
+  audioLoader.load(
+    musicPath,
+    (buffer) => {
+      backgroundMusic = new Audio(audioListener);
+      backgroundMusic.setBuffer(buffer);
+      backgroundMusic.setLoop(true); // 循环播放
+      backgroundMusic.setVolume(0.5); // 音量
+      console.log("背景音乐加载完成");
+
+      // 读取localStorage中的音乐状态
+      const savedMusicState = localStorage.getItem('gameMusicEnabled');
+      isMusicPlaying = savedMusicState === 'true';
+
+      // 根据保存的状态决定是否播放
+      if (isMusicPlaying) {
+        backgroundMusic.play().catch(err => {
+          console.log("自动播放需要用户交互，等待用户操作...", err);
+        });
+      }
+    },
+    (xhr) => console.log(`音乐加载中: ${(xhr.loaded/xhr.total*100).toFixed(1)}%`),
+    (err) => console.error("音乐加载失败:", err)
+  );
+}
+
+// 播放/暂停控制（简化）
+function toggleMusic() {
+  if (!backgroundMusic) return;
+  
+  isMusicPlaying ? backgroundMusic.pause() : backgroundMusic.play();
+  isMusicPlaying = !isMusicPlaying;
+  // 如需更新按钮文字，可在此处添加
+  localStorage.setItem('gameMusicEnabled', isMusicPlaying);
+}
+
+// 创建控制按钮（可选，固定样式）
+function createMusicButton() {
+  const btn = document.createElement('button');
+  btn.textContent = '音乐开启/关闭';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    z-index: 100;
+  `;
+  btn.onclick = toggleMusic;
+  document.body.appendChild(btn);
+}
+
+initAudio('music.mp3');
+
+// 创建控制按钮（可选）
+createMusicButton();
+initDialogSystem();
+animate();

@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>关卡2</title>
+  <title>关卡3</title>
   <style>
     body { 
       margin: 0; 
@@ -68,9 +68,8 @@
 <body>
   <!-- 背景图容器 -->
   <div id="bgContainer">
-    <img id="bgImage" src="door2.png" alt="背景图">
-    <div id="clickPrompt"> 全球污染进一步恶化，<br>工业垃圾进入维度裂缝，<br>裂缝变的不稳定。<br>现实世界开始出现小型悖论物体，<br>部分地区维度扭曲，<br>你需要通过旋转虚拟模型，<br>来预测并封锁现实中的裂隙。<br>点击进入第二个维度裂缝,进行维修吧。 </div>
-  </div>
+    <img id="bgImage" src="door3.png" alt="背景图">
+    <div id="clickPrompt"> 这里，<br>是美国在孢子侵略前<br>最后一项实验，<br>也是保存最好的维度实验，<br>快进来吧。<br><br>This is the third<br>dimension experiment, <br>and I hope to uncover<br>some clues.<br>（这是第三次维度试验了，<br>希望能找到点线索）
 
   <!-- 调试信息面板 -->
   <div id="debugInfo"></div>
@@ -95,10 +94,10 @@
       // 显示调试信息
       debugInfo.textContent = "正在加载场景...";
       
-      // 动态加载并执行main2.js
+      // 动态加载并执行main1.js
       const script = document.createElement('script');
       script.type = 'module';
-      script.src = 'main2.js';
+      script.src = 'main3.js';
       document.body.appendChild(script);
     });
   </script>

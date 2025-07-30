@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏选择对话框</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        game: {
+                            primary: '#1E3A8A', // 深蓝主色调
+                            secondary: '#DC2626', // 红色强调色
+                            dark: '#111827', // 深色背景
+                            light: '#F3F4F6', // 浅色文本
+                        }
+                    },
+                    fontFamily: {
+                        game: ['"Press Start 2P"', 'cursive', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .btn-game {
+                @apply py-3 px-6 rounded-md font-bold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .dialog-backdrop {
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+        }
+    </style>
+    
+    <!-- 引入游戏风格字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body class="bg-game-dark text-game-light min-h-screen flex items-center justify-center p-4">
+    <!-- 游戏背景（示例） -->
+    <div class="fixed inset-0 z-0 opacity-30">
+        <img src="https://picsum.photos/id/237/1920/1080" alt="游戏场景背景" class="w-full h-full object-cover">
+    </div>
+
+    <!-- 询问对话框 -->
+    <div id="questionDialog" class="fixed inset-0 z-50 flex items-center justify-center dialog-backdrop bg-black/70">
+        <div class="bg-game-primary rounded-lg shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all duration-500 scale-100">
+            <h2 class="text-[clamp(1.2rem,3vw,1.5rem)] text-center mb-6 text-shadow font-game">是否赶紧离开？</h2>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <button id="continueBtn" class="btn-game bg-green-600 hover:bg-green-700 focus:ring-green-500">
+                    <i class="fa fa-arrow-right mr-2"></i>继续
+                </button>
+                <button id="escapeBtn" class="btn-game bg-game-secondary hover:bg-red-700 focus:ring-red-500">
+                    <i class="fa fa-sign-out mr-2"></i>撤离
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 道具获取对话框（默认隐藏） -->
+    <div id="itemDialog" class="fixed inset-0 z-50 flex items-center justify-center dialog-backdrop bg-black/70 hidden">
+        <div class="bg-game-primary rounded-lg shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all duration-500 scale-100">
+            <div class="text-center">
+                <div class="mb-4 p-4 bg-white/10 rounded-lg inline-block">
+                    <!-- 道具图片 -->
+                    <img id="itemImage" src="https://picsum.photos/id/1/200/200" alt="收集到的道具" class="w-32 h-32 object-contain">
+                </div>
+                <h3 class="text-xl font-game mb-6 text-yellow-300 text-shadow">收集到道具一个！</h3>
+                <button id="proceedBtn" class="btn-game bg-blue-600 hover:bg-blue-700 focus:ring-blue-500">
+                    <i class="fa fa-gamepad mr-2"></i>继续游戏
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const questionDialog = document.getElementById('questionDialog');
+        const itemDialog = document.getElementById('itemDialog');
+        const continueBtn = document.getElementById('continueBtn');
+        const escapeBtn = document.getElementById('escapeBtn');
+        const proceedBtn = document.getElementById('proceedBtn');
+        
+        // 继续按钮点击事件
+        continueBtn.addEventListener('click', () => {
+            // 隐藏询问对话框，显示道具对话框
+            questionDialog.classList.add('hidden');
+            // 添加动画效果
+            setTimeout(() => {
+                itemDialog.classList.remove('hidden');
+                // 可以在这里添加道具图片的动画效果
+                const itemImg = document.getElementById('itemImage');
+                itemImg.classList.add('animate-pulse');
+                setTimeout(() => itemImg.classList.remove('animate-pulse'), 1000);
+            }, 300);
+        });
+        
+        // 继续游戏按钮点击事件
+        proceedBtn.addEventListener('click', () => {
+            // 保存道具到本地存储
+            saveItem();
+            // 跳转到main200.html
+            window.location.href = 'main200.html';
+        });
+        
+        // 撤离按钮点击事件
+        escapeBtn.addEventListener('click', () => {
+            // 不保存道具，直接跳转到main201.html
+            window.location.href = 'main201.html';
+        });
+        
+        // 保存道具函数
+        function saveItem() {
+            try {
+                // 获取现有的道具列表，如果没有则创建一个新数组
+                let items = JSON.parse(localStorage.getItem('gameItems')) || [];
+                
+                // 添加新道具（这里可以根据实际情况修改道具信息）
+                const newItem = {
+                    id: 'item_' + Date.now(), // 唯一ID
+                    name: '神秘道具', // 道具名称
+                    collectedAt: new Date().toISOString(), // 收集时间
+                    level: '当前关卡' // 收集的关卡
+                };
+                
+                items.push(newItem);
+                
+                // 保存回本地存储
+                localStorage.setItem('gameItems', JSON.stringify(items));
+                
+                console.log('道具已保存:', newItem);
+            } catch (error) {
+                console.error('保存道具失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

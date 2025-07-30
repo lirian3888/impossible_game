@@ -1,0 +1,33 @@
+// 读取本地存储中的道具数据
+function getSavedItems() {
+  try {
+    // 从localStorage获取数据（默认是JSON字符串）
+    const itemsStr = localStorage.getItem('gameItems');
+    // 解析为JavaScript数组（如果没有数据，返回空数组）
+    return itemsStr ? JSON.parse(itemsStr) : [];
+  } catch (error) {
+    console.error('读取道具数据失败:', error);
+    return [];
+  }
+}
+
+// 使用示例：在页面中显示所有收集的道具
+function showSavedItems() {
+  const items = getSavedItems();
+  if (items.length === 0) {
+    console.log('暂无收集的道具');
+    return;
+  }
+  
+  // 遍历道具并使用（例如显示在页面上）
+  items.forEach((item, index) => {
+    console.log(`道具 ${index + 1}:`);
+    console.log(`名称：${item.name}`);
+    console.log(`关卡：${item.level}`);
+    console.log(`收集时间：${new Date(item.collectedAt).toLocaleString()}`);
+    console.log('---');
+  });
+}
+
+// 调用函数查看道具
+showSavedItems();
