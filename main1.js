@@ -555,7 +555,7 @@ function createMusicButton() {
   document.body.appendChild(btn);
 }
 
-initAudio('music.mp3');
+initAudio('music.MP3');
 
 // 创建控制按钮（可选）
 createMusicButton();
